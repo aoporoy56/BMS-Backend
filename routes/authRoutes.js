@@ -8,7 +8,7 @@ router.post("/register", register);
 router.post("/register/verify", verifyRegisterOTP);
 router.post("/login", login);
 router.post("/login/verify", verifyLoginOTP);
-router.delete("/delete", deleteUser)
+router.post("/delete", deleteUser)
 
 
 router.put('/update', authMiddleware, updateUser);

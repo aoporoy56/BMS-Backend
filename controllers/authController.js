@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sendOTP = require("../utils/sendOTP");
+const sendLoginNotification = require("../utils/sendOTP");
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -57,14 +58,13 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ msg: "Invalid Email" });
+    if (!user) return res.status(400).json({ msg: "No Account Found" });
 
     if (!user.isVerified) {
       const otp = generateOTP();
       user.otp = otp;
       user.otpExpires = Date.now() + 5 * 60 * 1000;
       await user.save();
-      await sendOTP(email, otp);
       return res.status(403).json({ msg: "OTP sent. Please verify." });
     }
 
@@ -72,6 +72,7 @@ exports.login = async (req, res) => {
     if (!match) return res.status(400).json({ msg: "Wrong Password" });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+      await sendLoginNotification(email);
     res.json({ token, user });
   } catch (err) {
     res.status(500).json({ msg: "Server error" });
@@ -101,6 +102,7 @@ exports.verifyLoginOTP = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
   const { email } = req.body;
+  console.log(email);
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ msg: "User not found" });
